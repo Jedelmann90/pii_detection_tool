@@ -124,7 +124,7 @@ PII_detection/
 
 ```bash
 # Upload CSV for analysis
-curl -X POST "http://localhost:8000/analyze-csv" \
+curl -X POST "http://localhost:8001/analyze-csv" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@your-file.csv"
 ```

@@ -27,6 +27,15 @@ async def root():
 async def health_check():
     return {"status": "healthy"}
 
+@app.get("/test-model")
+async def test_model():
+    """Test direct model invocation"""
+    try:
+        response = pii_detector._call_titan_model("Is this PII: john@email.com? Answer yes or no.")
+        return {"success": True, "response": response}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 @app.post("/analyze-csv", response_model=List[ColumnAnalysis])
 async def analyze_csv(file: UploadFile = File(...)):
     """
@@ -40,19 +49,17 @@ async def analyze_csv(file: UploadFile = File(...)):
         content = await file.read()
         df = pd.read_csv(io.StringIO(content.decode('utf-8')))
         
-        # Analyze each column for PII
+        # Analyze the CSV for PII
+        analysis_results = pii_detector.analyze_csv(df)
+        
         results = []
-        for column in df.columns:
-            sample_values = df[column].dropna().astype(str).sample(min(5, len(df))).tolist()
-            
-            pii_result = pii_detector.analyze_column(column, sample_values)
-            
+        for result in analysis_results:
             results.append(ColumnAnalysis(
-                column_name=column,
-                sample_values=sample_values,
-                is_pii=pii_result.is_pii,
-                confidence=pii_result.confidence,
-                reasoning=pii_result.reasoning
+                column_name=result['column'],
+                sample_values=result['samples'],
+                is_pii=result['classification'] != 'NO_PII',
+                confidence=result['confidence'],
+                reasoning=result['reasoning']
             ))
         
         return results
@@ -66,7 +73,19 @@ async def analyze_single_column(column_name: str, sample_values: List[str]):
     Analyze a single column for PII content
     """
     try:
-        result = pii_detector.analyze_column(column_name, sample_values)
-        return result
+        # Create a simple DataFrame for the single column
+        import pandas as pd
+        df = pd.DataFrame({column_name: sample_values})
+        analysis_results = pii_detector.analyze_csv(df)
+        
+        if analysis_results:
+            result = analysis_results[0]
+            return PIIResult(
+                is_pii=result['classification'] != 'NO_PII',
+                confidence=result['confidence'],
+                reasoning=result['reasoning']
+            )
+        else:
+            return PIIResult(is_pii=False, confidence=0.0, reasoning="No analysis results")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error analyzing column: {str(e)}")
