@@ -2,14 +2,11 @@ version: '3.8'
 
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: joshuaedelmann/pii-detection-backend:latest
     ports:
       - "8000:8000"
     environment:
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_PROFILE=work
       - AWS_REGION=us-gov-west-1
     volumes:
       - ~/.aws:/root/.aws:ro
@@ -24,9 +21,7 @@ services:
       start_period: 40s
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: joshuaedelmann/pii-detection-frontend:latest
     ports:
       - "3000:3000"
     environment:
