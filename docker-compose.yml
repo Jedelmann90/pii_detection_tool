@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   backend:
-    image: joshuaedelmann/pii-detection-backend:latest
+    image: joshuaedelmann/export-review-backend:latest
     ports:
       - "8000:8000"
     environment:
@@ -12,7 +10,7 @@ services:
       - ~/.aws:/root/.aws:ro
       - ./backend/data:/app/data
     networks:
-      - pii-network
+      - app-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -21,7 +19,7 @@ services:
       start_period: 40s
 
   frontend:
-    image: joshuaedelmann/pii-detection-frontend:latest
+    image: joshuaedelmann/export-review-frontend:latest
     ports:
       - "3000:3000"
     environment:
@@ -29,8 +27,8 @@ services:
     depends_on:
       - backend
     networks:
-      - pii-network
+      - app-network
 
 networks:
-  pii-network:
+  app-network:
     driver: bridge

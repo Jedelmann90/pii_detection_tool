@@ -1,15 +1,24 @@
-FROM python:3.11-slim
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy the simple frontend and server
-COPY simple_frontend.html ./simple_frontend.html
-COPY serve_frontend.py ./serve_frontend.py
+# Copy package files
+COPY package*.json ./
 
-# Install Python dependencies if needed
-RUN pip install --no-cache-dir fastapi uvicorn
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci
 
+# Copy source code
+COPY . .
+
+# Build the Next.js application
+RUN npm run build
+
+# Keep TypeScript and essential dev dependencies that Next.js needs at runtime
+RUN npm prune --production && npm install typescript
+
+# Expose port
 EXPOSE 3000
 
-# Run the simple frontend server
-CMD ["python", "serve_frontend.py"]
+# Start the application
+CMD ["npm", "start"]

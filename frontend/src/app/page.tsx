@@ -57,7 +57,7 @@ export default function Home() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              🔐 PII Detection Tool
+              Export Review Assistant
             </h1>
             <p className="text-gray-600 text-lg">
               Upload CSV files to scan for personally identifiable information

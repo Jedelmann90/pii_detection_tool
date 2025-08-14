@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "PII Detection Tool",
+  title: "Export Review Assistant",
   description: "Analyze CSV files for personally identifiable information",
 };
 
