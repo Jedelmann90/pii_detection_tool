@@ -64,8 +64,26 @@ cd frontend && npm run dev
 
 ### AWS Configuration
 
-### Work Account Setup (Okta SSO + IAM Role)
-The application is configured to use work AWS accounts through Okta SSO:
+The application supports two methods for AWS authentication:
+
+#### Method 1: Direct AWS Credentials (.env file) - Current Setup
+For temporary development, use direct AWS credentials:
+
+1. **Copy and configure environment file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit .env file with your AWS credentials:**
+   ```bash
+   # Method 1: Direct AWS Credentials (temporary setup)
+   AWS_ACCESS_KEY_ID=your_access_key_here
+   AWS_SECRET_ACCESS_KEY=your_secret_key_here
+   AWS_REGION=us-east-1
+   ```
+
+#### Method 2: Work Account Setup (Okta SSO + IAM Role) - Future Use
+For production/long-term use with work accounts through Okta SSO:
 
 1. **Configure AWS CLI with work profile:**
    ```bash
@@ -74,13 +92,11 @@ The application is configured to use work AWS accounts through Okta SSO:
    # Follow prompts to authenticate via Okta
    ```
 
-2. **Set environment variables:**
+2. **Set environment variables in .env:**
    ```bash
-   # Copy the example environment file
-   cp .env.example .env
-   
-   # Edit .env and set your work profile name
+   # Method 2: AWS Profile (recommended for long-term)
    AWS_PROFILE=work-profile
+   USE_AWS_PROFILE=true
    AWS_REGION=us-east-1
    ```
 
@@ -112,3 +128,13 @@ The application is configured to use work AWS accounts through Okta SSO:
 ## Security Considerations
 
 This is a defensive security tool designed to detect PII in datasets. The system processes potentially sensitive data, so ensure proper AWS IAM permissions and secure deployment practices when using in production.
+
+
+## 7 Claude rules
+1. First think through the problem, read the codebase for relevant files, and write a plan to tasks/todo.md.
+2. The plan should have a list of todo items that you can check off as you complete them
+3. Before you begin working, check in with me and I will verify the plan.
+4. Then, begin working on the todo items, marking them as complete as you go.
+5. Please every step of the way just give me a high level explanation of what changes you made
+6. Make every task and code change you do as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
+7. Finally, add a review section to the [todo.md](http://todo.md/) file with a summary of the changes you made and any other relevant information.

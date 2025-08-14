@@ -3,13 +3,39 @@ import boto3
 import pandas as pd
 import json
 from typing import List, Dict, Any
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class PIIDetector:
     def __init__(self):
-        self.session = boto3.Session()
+        # Check if we should use AWS profile or explicit credentials
+        use_profile = os.getenv('USE_AWS_PROFILE', 'false').lower() == 'true'
+        
+        if use_profile:
+            # Use AWS profile (existing behavior)
+            aws_profile = os.getenv('AWS_PROFILE')
+            if aws_profile:
+                self.session = boto3.Session(profile_name=aws_profile)
+            else:
+                self.session = boto3.Session()
+        else:
+            # Use explicit credentials from .env
+            aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
+            aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+            
+            if aws_access_key and aws_secret_key:
+                self.session = boto3.Session(
+                    aws_access_key_id=aws_access_key,
+                    aws_secret_access_key=aws_secret_key
+                )
+            else:
+                # Fallback to default credential chain
+                self.session = boto3.Session()
+        
         self.bedrock_client = self.session.client(
             service_name='bedrock-runtime',
-            region_name=os.getenv('AWS_REGION', 'us-gov-west-1')
+            region_name=os.getenv('AWS_REGION', 'us-east-1')
         )
         self.model_id = 'amazon.titan-text-express-v1'
     

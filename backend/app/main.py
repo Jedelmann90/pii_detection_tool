@@ -3,8 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import io
 from typing import List, Dict
+from dotenv import load_dotenv
 from .pii_detector import PIIDetector
 from .models import PIIResult, ColumnAnalysis
+
+# Load environment variables at startup
+load_dotenv()
 
 app = FastAPI(title="PII Detection API", version="1.0.0")
 
