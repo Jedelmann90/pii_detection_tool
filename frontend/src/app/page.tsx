@@ -20,11 +20,44 @@ export default function Home() {
   const [results, setResults] = useState<ColumnAnalysis[] | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [estimatedCost, setEstimatedCost] = useState<any>(null);
+  const [actualCost, setActualCost] = useState<any>(null);
+
+  const estimateCost = async (file: File) => {
+    try {
+      // Parse CSV to estimate column count
+      const text = await file.text();
+      const lines = text.split('\n');
+      const columnCount = lines[0]?.split(',').length || 1;
+      
+      const response = await fetch('http://localhost:8000/estimate-cost', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          column_count: columnCount,
+          avg_samples_per_column: 5,
+          avg_sample_length: 20
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setEstimatedCost(data.estimated_cost);
+      }
+    } catch (error) {
+      console.error('Error estimating cost:', error);
+    }
+  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+      setEstimatedCost(null);
+      setActualCost(null);
+      estimateCost(file);
     }
   };
 
@@ -38,8 +71,9 @@ export default function Home() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      // Always use localhost:8001 for client-side requests
-      const apiUrl = 'http://localhost:8001';
+      // Determine API URL - use localhost for browser requests in Docker deployment
+      // The environment variable is only used for server-side rendering
+      const apiUrl = 'http://localhost:8000';
       console.log('Sending request to:', `${apiUrl}/analyze-csv`);
       
       const response = await fetch(`${apiUrl}/analyze-csv`, {
@@ -57,13 +91,20 @@ export default function Home() {
 
       const data = await response.json();
       console.log('Analysis results:', data);
-      setResults(data);
+      // Handle new API response format with columns and total_cost_info
+      const results = data.columns || data;
+      setResults(results);
+      
+      // Set actual cost if available
+      if (data.total_cost_info) {
+        setActualCost(data.total_cost_info);
+      }
     } catch (error) {
       console.error('Error analyzing file:', error);
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        alert('Cannot connect to backend. Please ensure the backend is running on port 8001.');
+        alert('Cannot connect to backend. Please ensure the backend is running on port 8000.');
       } else {
-        alert(`Error analyzing file: ${error.message || 'Unknown error'}`);
+        alert(`Error analyzing file: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     } finally {
       setIsAnalyzing(false);
@@ -120,6 +161,31 @@ export default function Home() {
                   <Badge variant="secondary">
                     {(selectedFile.size / 1024).toFixed(1)} KB
                   </Badge>
+                </div>
+              )}
+
+              {/* Cost Display */}
+              {estimatedCost && (
+                <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+                  <h4 className="text-sm font-semibold text-blue-900 mb-2">Estimated Cost</h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>Input Tokens: {estimatedCost.input_tokens}</div>
+                    <div>Output Tokens: {estimatedCost.output_tokens}</div>
+                    <div>Total Cost: ${estimatedCost.total_cost_usd?.toFixed(6)}</div>
+                    <div>Total Tokens: {estimatedCost.total_tokens}</div>
+                  </div>
+                </div>
+              )}
+
+              {actualCost && (
+                <div className="p-4 rounded-lg bg-green-50 border border-green-200">
+                  <h4 className="text-sm font-semibold text-green-900 mb-2">Actual Cost</h4>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>Input Tokens: {actualCost.input_tokens}</div>
+                    <div>Output Tokens: {actualCost.output_tokens}</div>
+                    <div className="font-bold">Total Cost: ${actualCost.total_cost_usd?.toFixed(6)}</div>
+                    <div>Total Tokens: {actualCost.total_tokens}</div>
+                  </div>
                 </div>
               )}
 

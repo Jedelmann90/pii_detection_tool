@@ -4,6 +4,7 @@ import pandas as pd
 import json
 from typing import List, Dict, Any
 from dotenv import load_dotenv
+from .cost_calculator import CostCalculator
 
 load_dotenv()
 
@@ -39,9 +40,12 @@ class PIIDetector:
         )
         self.model_id = 'amazon.titan-text-express-v1'
     
-    def _call_titan_model(self, prompt: str) -> str:
-        """Call Titan model directly via boto3"""
+    def _call_titan_model(self, prompt: str) -> tuple[str, Dict[str, float]]:
+        """Call Titan model directly via boto3 and return response with cost info"""
         try:
+            # Calculate input tokens
+            input_tokens = CostCalculator.estimate_tokens(prompt)
+            
             response = self.bedrock_client.invoke_model(
                 modelId=self.model_id,
                 contentType='application/json',
@@ -57,7 +61,15 @@ class PIIDetector:
             )
             
             result = json.loads(response['body'].read())
-            return result['results'][0]['outputText'].strip()
+            output_text = result['results'][0]['outputText'].strip()
+            
+            # Calculate output tokens
+            output_tokens = CostCalculator.estimate_tokens(output_text)
+            
+            # Calculate cost
+            cost_info = CostCalculator.calculate_cost(input_tokens, output_tokens)
+            
+            return output_text, cost_info
         except Exception as e:
             raise Exception(f"Error calling Titan model: {str(e)}")
     
@@ -84,7 +96,9 @@ class PIIDetector:
                     'classification': 'NO_DATA',
                     'confidence': 0.0,
                     'reasoning': 'Column contains no data',
-                    'samples': []
+                    'samples': [],
+                    'cost_info': {'input_tokens': 0, 'output_tokens': 0, 'total_tokens': 0, 
+                                 'input_cost_usd': 0.0, 'output_cost_usd': 0.0, 'total_cost_usd': 0.0}
                 })
                 continue
             
@@ -108,7 +122,7 @@ Is this PII? What type?
 Answer with just the category (like "EMAIL" or "NO_PII") and a brief reason."""
 
                 # Call Titan model directly
-                response = self._call_titan_model(prompt)
+                response, cost_info = self._call_titan_model(prompt)
                 
                 # Parse Titan's text response and extract PII classification
                 response_upper = response.upper()
@@ -148,7 +162,8 @@ Answer with just the category (like "EMAIL" or "NO_PII") and a brief reason."""
                     'classification': classification,
                     'confidence': confidence,
                     'reasoning': response.strip(),
-                    'samples': sample_values
+                    'samples': sample_values,
+                    'cost_info': cost_info
                 })
                     
             except Exception as e:
@@ -157,7 +172,9 @@ Answer with just the category (like "EMAIL" or "NO_PII") and a brief reason."""
                     'classification': 'ERROR',
                     'confidence': 0.0,
                     'reasoning': f'Error analyzing column: {str(e)}',
-                    'samples': sample_values
+                    'samples': sample_values,
+                    'cost_info': {'input_tokens': 0, 'output_tokens': 0, 'total_tokens': 0, 
+                                 'input_cost_usd': 0.0, 'output_cost_usd': 0.0, 'total_cost_usd': 0.0}
                 })
         
         return results
