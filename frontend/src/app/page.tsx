@@ -1,6 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { Upload, FileSpreadsheet } from "lucide-react";
 
 export interface ColumnAnalysis {
   column_name: string;
@@ -32,111 +38,148 @@ export default function Home() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await fetch('http://localhost:8000/analyze-csv', {
+      // Always use localhost:8001 for client-side requests
+      const apiUrl = 'http://localhost:8001';
+      console.log('Sending request to:', `${apiUrl}/analyze-csv`);
+      
+      const response = await fetch(`${apiUrl}/analyze-csv`, {
         method: 'POST',
         body: formData,
       });
 
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Analysis failed');
+        const errorText = await response.text();
+        console.error('Response error:', errorText);
+        throw new Error(`Analysis failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('Analysis results:', data);
       setResults(data);
     } catch (error) {
       console.error('Error analyzing file:', error);
-      alert('Error analyzing file. Please make sure the backend is running.');
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        alert('Cannot connect to backend. Please ensure the backend is running on port 8001.');
+      } else {
+        alert(`Error analyzing file: ${error.message || 'Unknown error'}`);
+      }
     } finally {
       setIsAnalyzing(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Export Review Assistant
-            </h1>
-            <p className="text-gray-600 text-lg">
-              Upload CSV files to scan for personally identifiable information
-            </p>
-          </div>
+    <div className="flex flex-1 flex-col">
+      {/* Header with sidebar trigger */}
+      <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
+        <div className="flex flex-1 items-center gap-2">
+          <FileSpreadsheet className="h-5 w-5 text-[#7F1D1D]" />
+          <h1 className="text-lg font-semibold">CSV Export Analysis</h1>
+        </div>
+      </header>
 
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4">Upload CSV File</h2>
-            
-            <div className="mb-4">
-              <input
-                type="file"
-                accept=".csv"
-                onChange={handleFileChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-            </div>
-
-            {selectedFile && (
-              <div className="mb-4 p-3 bg-gray-50 rounded">
-                <p className="text-sm text-gray-700">
-                  Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-                </p>
+      {/* Main content */}
+      <main className="flex-1 overflow-auto p-6">
+        <div className="mx-auto max-w-4xl space-y-6">
+          {/* Upload Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Upload CSV File</CardTitle>
+              <CardDescription>
+                Scan your CSV exports for personally identifiable information
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-center w-full">
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-accent/50 hover:bg-accent">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="w-8 h-8 mb-2 text-[#7F1D1D]" />
+                    <p className="mb-2 text-sm">
+                      <span className="font-semibold">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-muted-foreground">CSV files only</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
               </div>
-            )}
 
-            <button
-              onClick={handleAnalyze}
-              disabled={!selectedFile || isAnalyzing}
-              className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {isAnalyzing ? 'Analyzing...' : 'Analyze CSV'}
-            </button>
-          </div>
+              {selectedFile && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-accent">
+                  <span className="text-sm font-medium">
+                    {selectedFile.name}
+                  </span>
+                  <Badge variant="secondary">
+                    {(selectedFile.size / 1024).toFixed(1)} KB
+                  </Badge>
+                </div>
+              )}
 
+              <Button
+                onClick={handleAnalyze}
+                disabled={!selectedFile || isAnalyzing}
+                className="w-full bg-[#7F1D1D] hover:bg-[#5F1515] text-white"
+              >
+                {isAnalyzing ? 'Analyzing...' : 'Analyze CSV'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Results Card */}
           {results && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4">Analysis Results</h2>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-gray-300">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="border border-gray-300 px-4 py-2 text-left">Column</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">Status</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">Confidence</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">Reasoning</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.map((result, index) => (
-                      <tr key={index} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 px-4 py-2 font-medium">
-                          {result.column_name}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2">
-                          <span className={`px-2 py-1 rounded text-sm ${
-                            result.is_pii 
-                              ? 'bg-red-100 text-red-800' 
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {result.is_pii ? 'PII Detected' : 'Safe'}
-                          </span>
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2">
-                          {Math.round(result.confidence * 100)}%
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2 text-sm">
-                          {result.reasoning}
-                        </td>
+            <Card>
+              <CardHeader>
+                <CardTitle>Analysis Results</CardTitle>
+                <CardDescription>
+                  PII detection results for your CSV file
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="px-4 py-2 text-left font-medium">Column</th>
+                        <th className="px-4 py-2 text-left font-medium">Status</th>
+                        <th className="px-4 py-2 text-left font-medium">Confidence</th>
+                        <th className="px-4 py-2 text-left font-medium">Reasoning</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                    </thead>
+                    <tbody>
+                      {results.map((result, index) => (
+                        <tr key={index} className="border-b hover:bg-muted/50">
+                          <td className="px-4 py-2 font-medium">
+                            {result.column_name}
+                          </td>
+                          <td className="px-4 py-2">
+                            <Badge variant={result.is_pii ? "destructive" : "secondary"}>
+                              {result.is_pii ? 'PII Detected' : 'Safe'}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-2">
+                            {Math.round(result.confidence * 100)}%
+                          </td>
+                          <td className="px-4 py-2 text-sm text-muted-foreground">
+                            {result.reasoning}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
