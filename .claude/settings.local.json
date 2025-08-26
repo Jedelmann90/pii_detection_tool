@@ -49,36 +49,4 @@
     ],
     "deny": []
   },
-  "hooks": {
-    "Stop": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/bin/bash -lc '/Users/victory/Desktop/docker/asdserver/.claude/hooks/notify.sh \"Claude Code\" \"Process has stopped\"'"
-          },
-          {
-            "type": "command",
-            "command": "/bin/bash -lc '/Users/victory/Desktop/docker/asdserver/.claude/hooks/play_audio.sh /Users/victory/Desktop/docker/asdserver/.claude/sounds/stopper.mp3'"
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/bin/bash -lc '/Users/victory/Desktop/docker/asdserver/.claude/hooks/notify.sh \"Claude Code\" \"Notification\"'"
-          },
-          {
-            "type": "command",
-            "command": "/bin/bash -lc '/Users/victory/Desktop/docker/asdserver/.claude/hooks/play_audio.sh /Users/victory/Desktop/docker/asdserver/.claude/sounds/done.mp3'"
-          }
-        ]
-      }
-    ]
-  }
 }

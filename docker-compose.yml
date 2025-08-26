@@ -1,8 +1,8 @@
 services:
   backend:
-    image: joshuaedelmann/export-review-backend:latest
+    image: joshuaedelmann/pii-detector-backend:latest
     ports:
-      - "8001:8000"
+      - "8000:8000"
     env_file:
       - .env
     volumes:
@@ -18,16 +18,9 @@ services:
       start_period: 40s
 
   frontend:
-    build: ./frontend
+    image: joshuaedelmann/pii-detector-frontend:latest
     ports:
       - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
-    command: npm run dev
     depends_on:
       - backend
     networks:
