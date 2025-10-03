@@ -1,17 +1,18 @@
 services:
   backend:
-    image: joshuaedelmann/pii-detector-backend:latest
+    build:
+      context: ./backend
+      target: production
     ports:
       - "8000:8000"
     env_file:
       - .env
     volumes:
       - ~/.aws:/root/.aws:ro
-      - ./backend/data:/app/data
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "node", "-e", "const http = require('http'); const options = { hostname: 'localhost', port: 8000, path: '/health', timeout: 2000 }; const req = http.request(options, (res) => process.exit(res.statusCode === 200 ? 0 : 1)); req.on('error', () => process.exit(1)); req.end();"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend-nodejs:
+    build:
+      context: .
+      target: development
+    container_name: pii-detection-nodejs-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      # Volume mapping for hot reload
+      - ./src:/app/src:ro  # Source code (read-only)
+      - ./package.json:/app/package.json:ro
+      - ./tsconfig.json:/app/tsconfig.json:ro
+      # Anonymous volume for node_modules (performance)
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - USE_AWS_PROFILE=${USE_AWS_PROFILE:-false}
+      - AWS_PROFILE=${AWS_PROFILE}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    env_file:
+      - ../.env  # Use the same .env file from project root
+    networks:
+      - pii-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  pii-network:
+    driver: bridge
+
+# Optional: Add volume for persistent data if needed
+volumes:
+  node_modules:

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a PII (Personally Identifiable Information) detection tool designed for defensive security purposes. It analyzes CSV files to identify potential PII using AWS Bedrock's Titan model. The application consists of a FastAPI backend and a Next.js/React frontend.
+This is a PII (Personally Identifiable Information) detection tool designed for defensive security purposes. It analyzes CSV files to identify potential PII using AWS Bedrock's Titan model. The application consists of a Node.js/Express backend and a Next.js/React frontend.
 
 ## Development Commands
 
@@ -14,18 +14,20 @@ This is a PII (Personally Identifiable Information) detection tool designed for 
 # Navigate to backend directory
 cd backend
 
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
 # Install dependencies
-pip install -r requirements.txt
+npm install
 
-# Run backend server (development)
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+# Run backend server (development with hot reload)
+npm run dev
 
-# Test imports
-python test_imports.py
+# Build for production
+npm run build
+
+# Run production server
+npm start
+
+# Run linting
+npm run lint
 ```
 
 ### Frontend Development
@@ -68,10 +70,11 @@ docker-compose down
 
 ## Architecture
 
-### Backend (FastAPI + AWS Bedrock)
-- **Entry Point**: `backend/app/main.py` - FastAPI application with CORS configuration
-- **PII Detection Logic**: `backend/app/pii_detector.py` - Core detection using AWS Bedrock Titan model
-- **Data Models**: `backend/app/models.py` - Pydantic models for API responses
+### Backend (Node.js/Express + AWS Bedrock)
+- **Entry Point**: `backend/src/app.ts` - Express application with CORS configuration
+- **PII Detection Logic**: `backend/src/piiDetector.ts` - Core detection using AWS Bedrock Titan model
+- **Data Models**: `backend/src/types.ts` - TypeScript interfaces for API responses
+- **Cost Calculator**: `backend/src/costCalculator.ts` - Token estimation and cost tracking
 - **Configuration**: Supports AWS credentials via environment variables, AWS CLI, or AWS profiles
 
 ### Frontend (Next.js + shadcn/ui)
@@ -124,13 +127,13 @@ The system detects the following PII types:
 
 - **CORS Configuration**: Currently allows all origins (`*`) for development. Update for production.
 - **Model**: Uses Amazon Titan Text Express v1 via Bedrock
-- **Data Processing**: Pandas for CSV handling, max 5 sample values per column for analysis
+- **Data Processing**: Custom CSV parsing with csv-parser, max 5 sample values per column for analysis
 - **Error Handling**: Comprehensive error handling with appropriate HTTP status codes
 - **Docker**: Pre-built images available as `joshuaedelmann/export-review-backend` and `joshuaedelmann/export-review-frontend`
 
 ## Testing Approach
 
-- Backend: Use `python test_imports.py` to verify dependencies
+- Backend: Use `npm run lint` to verify code quality and `npm test` for unit tests
 - Manual testing via endpoints (no automated test suite currently)
 - Frontend: No test suite currently configured
 
@@ -141,3 +144,13 @@ This is a defensive security tool. When working with this codebase:
 - Maintain secure handling of uploaded CSV data
 - This tool is for identifying PII, not for malicious purposes
 - Review all PII classifications before taking action on data
+
+
+# 7 Claude rules
+1. First think through the problem, read the codebase for relevant files, and write a plan to tasks/todo.md.
+2. The plan should have a list of todo items that you can check off as you complete them
+3. Before you begin working, check in with me and I will verify the plan.
+4. Then, begin working on the todo items, marking them as complete as you go.
+5. Please every step of the way just give me a high level explanation of what changes you made
+6. Make every task and code change you do as simple as possible. We want to avoid making any massive or complex changes. Every change should impact as little code as possible. Everything is about simplicity.
+7. Finally, add a review section to the [todo.md](http://todo.md/) file with a summary of the changes you made and any other relevant information.
