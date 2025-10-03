@@ -46,8 +46,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-    files: 1
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    files: 10 // Allow up to 10 files
   },
   fileFilter: (req, file, cb) => {
     if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
@@ -143,51 +143,122 @@ app.post('/estimate-cost', asyncHandler(async (req: express.Request, res: expres
 }));
 
 /**
- * Analyze CSV endpoint
+ * Analyze CSV endpoint - supports single or multiple files
  */
-app.post('/analyze-csv', upload.single('file'), asyncHandler(async (req: express.Request, res: express.Response) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No CSV file provided' });
+app.post('/analyze-csv', upload.array('files', 10), asyncHandler(async (req: express.Request, res: express.Response) => {
+  const files = req.files as Express.Multer.File[];
+  
+  if (!files || files.length === 0) {
+    return res.status(400).json({ error: 'No CSV files provided' });
   }
 
-  if (!req.file.originalname.endsWith('.csv')) {
-    return res.status(400).json({ error: 'Only CSV files are supported' });
+  // Validate all files are CSV
+  for (const file of files) {
+    if (!file.originalname.endsWith('.csv')) {
+      return res.status(400).json({ 
+        error: `File ${file.originalname} is not a CSV file. Only CSV files are supported.` 
+      });
+    }
   }
 
   try {
-    // Validate CSV
-    const validation = CSVParser.validateCSV(req.file.buffer);
-    if (!validation.valid) {
-      return res.status(400).json({ error: validation.error });
-    }
-
-    // Parse CSV file
-    const csvData = await CSVParser.parseCSV(req.file.buffer);
-
-    // Analyze the CSV for PII
-    const analysisResults = await piiDetector.analyzeCsv(csvData);
-
-    const results: ColumnAnalysis[] = [];
+    const fileResults: any[] = [];
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
     let totalCostUsd = 0.0;
+    let totalPiiColumns = 0;
+    let totalColumns = 0;
 
-    for (const result of analysisResults) {
-      const costInfo = result.costInfo;
+    // Process each file
+    for (const file of files) {
+      // Validate CSV
+      const validation = CSVParser.validateCSV(file.buffer);
+      if (!validation.valid) {
+        return res.status(400).json({ 
+          error: `Invalid CSV file ${file.originalname}: ${validation.error}` 
+        });
+      }
 
-      totalInputTokens += costInfo.inputTokens;
-      totalOutputTokens += costInfo.outputTokens;
-      totalCostUsd += costInfo.totalCostUsd;
+      // Parse CSV file
+      const csvData = await CSVParser.parseCSV(file.buffer);
 
-      results.push({
-        column_name: result.column,
-        sample_values: result.samples,
-        is_pii: result.classification !== 'NO_PII',
-        confidence: result.confidence,
-        reasoning: result.reasoning,
-        cost_info: costInfo
-      });
+      // Analyze the CSV for PII
+      const analysisResults = await piiDetector.analyzeCsv(csvData);
+
+      const columnResults: ColumnAnalysis[] = [];
+      let fileInputTokens = 0;
+      let fileOutputTokens = 0;
+      let fileCostUsd = 0.0;
+      let filePiiColumns = 0;
+
+      for (const result of analysisResults) {
+        const costInfo = result.costInfo;
+
+
+        fileInputTokens += costInfo.inputTokens || 0;
+        fileOutputTokens += costInfo.outputTokens || 0;
+        fileCostUsd += costInfo.totalCostUsd || 0;
+
+        if (result.classification !== 'NO_PII') {
+          filePiiColumns++;
+          totalPiiColumns++;
+        }
+        totalColumns++;
+
+        columnResults.push({
+          column_name: result.column,
+          sample_values: result.samples,
+          is_pii: result.classification !== 'NO_PII',
+          confidence: result.confidence,
+          reasoning: result.reasoning,
+          cost_info: {
+            input_tokens: costInfo.inputTokens,
+            output_tokens: costInfo.outputTokens,
+            total_tokens: costInfo.totalTokens,
+            input_cost_usd: costInfo.inputCostUsd,
+            output_cost_usd: costInfo.outputCostUsd,
+            total_cost_usd: costInfo.totalCostUsd
+          }
+        });
+      }
+
+      // Calculate file-level confidence (average of all columns)
+      const fileConfidence = columnResults.length > 0 
+        ? columnResults.reduce((sum, col) => sum + col.confidence, 0) / columnResults.length
+        : 0;
+
+      // File summary
+      const fileResult = {
+        filename: file.originalname,
+        columns: columnResults,
+        summary: {
+          total_columns: columnResults.length,
+          pii_columns: filePiiColumns,
+          safe_columns: columnResults.length - filePiiColumns,
+          overall_status: filePiiColumns > 0 ? 'PII_DETECTED' : 'SAFE',
+          confidence: Math.round(fileConfidence * 100) / 100
+        },
+        cost_info: {
+          input_tokens: fileInputTokens,
+          output_tokens: fileOutputTokens,
+          total_tokens: fileInputTokens + fileOutputTokens,
+          input_cost_usd: Math.round((fileInputTokens / 1000) * 0.0008 * 1000000) / 1000000,
+          output_cost_usd: Math.round((fileOutputTokens / 1000) * 0.0016 * 1000000) / 1000000,
+          total_cost_usd: Math.round(fileCostUsd * 1000000) / 1000000
+        }
+      };
+
+      fileResults.push(fileResult);
+
+      totalInputTokens += fileInputTokens;
+      totalOutputTokens += fileOutputTokens;
+      totalCostUsd += fileCostUsd;
     }
+
+    // Calculate overall confidence across all files
+    const overallConfidence = fileResults.length > 0
+      ? fileResults.reduce((sum, file) => sum + file.summary.confidence, 0) / fileResults.length
+      : 0;
 
     const totalCostInfo = {
       input_tokens: totalInputTokens,
@@ -199,7 +270,15 @@ app.post('/analyze-csv', upload.single('file'), asyncHandler(async (req: express
     };
 
     const response = {
-      columns: results,
+      files: fileResults,
+      summary: {
+        total_files: files.length,
+        total_columns: totalColumns,
+        pii_columns: totalPiiColumns,
+        safe_columns: totalColumns - totalPiiColumns,
+        overall_status: totalPiiColumns > 0 ? 'PII_DETECTED' : 'SAFE',
+        confidence: Math.round(overallConfidence * 100) / 100
+      },
       total_cost_info: totalCostInfo
     };
 
@@ -207,7 +286,7 @@ app.post('/analyze-csv', upload.single('file'), asyncHandler(async (req: express
 
   } catch (error) {
     res.status(500).json({
-      error: `Error processing CSV: ${error instanceof Error ? error.message : String(error)}`
+      error: `Error processing CSV files: ${error instanceof Error ? error.message : String(error)}`
     });
   }
 }));
