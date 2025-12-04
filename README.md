@@ -1,14 +1,14 @@
 # PII Detection System
 
-A modern web application for detecting Personally Identifiable Information (PII) in CSV files using AWS Bedrock and Claude AI.
+A modern web application for detecting Personally Identifiable Information (PII) in CSV files using AWS Bedrock's Titan model.
 
 ## Architecture
 
 This application uses a clean separation between backend and frontend:
 
-- **Backend**: Python FastAPI server with AWS Bedrock integration
+- **Backend**: Node.js/Express server with AWS Bedrock integration
 - **Frontend**: React/Next.js with shadcn/ui components
-- **AI Model**: Claude Instant via AWS Bedrock for PII classification
+- **AI Model**: Amazon Titan Text Express v1 via AWS Bedrock for PII classification
 
 ## Project Structure
 

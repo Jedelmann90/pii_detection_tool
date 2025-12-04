@@ -4,133 +4,149 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a PII (Personally Identifiable Information) detection system with a separated backend/frontend architecture. The backend uses FastAPI and AWS Bedrock, while the frontend is built with React/Next.js and shadcn/ui components.
+This is a PII (Personally Identifiable Information) detection tool designed for defensive security purposes. It analyzes CSV files to identify potential PII using AWS Bedrock's Titan model. The application consists of a Node.js/Express backend and a Next.js/React frontend.
+
+## Development Commands
+
+### Backend Development
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Install dependencies
+npm install
+
+# Run backend server (development with hot reload)
+npm run dev
+
+# Build for production
+npm run build
+
+# Run production server
+npm start
+
+# Run linting
+npm run lint
+```
+
+### Frontend Development
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run production build
+npm start
+
+# Run linting
+npm run lint
+```
+
+### Docker Operations
+
+```bash
+# Start both services with Docker Compose
+docker-compose up
+
+# Start in detached mode
+docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# Check service health
+./check_servers.sh
+```
 
 ## Architecture
 
-- **backend/**: Python FastAPI server with AWS Bedrock integration
-  - **app/main.py**: FastAPI application with CORS and API endpoints
-  - **app/pii_detector.py**: Core PII detection logic using Claude via Bedrock
-  - **app/models.py**: Pydantic data models for API requests/responses
-  - **data/**: Contains training/testing CSV files with labeled PII examples
-- **frontend/**: React/Next.js application with modern UI
-  - **src/app/**: Next.js 13+ app directory structure
-  - **src/components/**: React components including shadcn/ui components
-  - Built with TypeScript, Tailwind CSS, and shadcn/ui
+### Backend (Node.js/Express + AWS Bedrock)
+- **Entry Point**: `backend/src/app.ts` - Express application with CORS configuration
+- **PII Detection Logic**: `backend/src/piiDetector.ts` - Core detection using AWS Bedrock Titan model
+- **Data Models**: `backend/src/types.ts` - TypeScript interfaces for API responses
+- **Cost Calculator**: `backend/src/costCalculator.ts` - Token estimation and cost tracking
+- **Configuration**: Supports AWS credentials via environment variables, AWS CLI, or AWS profiles
 
-## Key Dependencies
+### Frontend (Next.js + shadcn/ui)
+- **Main Page**: `frontend/src/app/page.tsx` - CSV upload interface
+- **Components**: 
+  - `FileUpload.tsx` - Drag-and-drop file upload
+  - `ResultsTable.tsx` - PII detection results display
+- **UI Components**: Located in `frontend/src/components/ui/` using shadcn/ui library
 
-### Backend
-- **fastapi**: Modern Python web framework
-- **uvicorn**: ASGI server for FastAPI
-- **langchain**: LLM orchestration framework
-- **boto3**: AWS SDK for Bedrock integration
-- **pandas**: CSV data processing
+### API Endpoints
+- `GET /` - Health check
+- `GET /health` - Detailed health status
+- `POST /analyze-csv` - Main endpoint for CSV analysis
+- `POST /analyze-column` - Analyze individual column
+- `GET /test-model` - Test direct model invocation
 
-### Frontend
-- **next.js**: React framework with app directory
-- **typescript**: Type safety
-- **tailwindcss**: Utility-first CSS framework
-- **shadcn/ui**: High-quality React components
-- **lucide-react**: Icon library
+## AWS Configuration
 
-## Common Commands
+The application requires AWS Bedrock access. Configure credentials using one of these methods:
 
-### Running the Application
-
-#### Backend
-```bash
-cd backend
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-#### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-#### Full Development Setup
-```bash
-# Terminal 1 - Backend
-cd backend && source venv/bin/activate && uvicorn app.main:app --reload
-
-# Terminal 2 - Frontend  
-cd frontend && npm run dev
-```
-
-### AWS Configuration
-
-The application supports two methods for AWS authentication:
-
-#### Method 1: Direct AWS Credentials (.env file) - Current Setup
-For temporary development, use direct AWS credentials:
-
-1. **Copy and configure environment file:**
-   ```bash
-   cp .env.example .env
+1. **Environment Variables (.env file)**:
    ```
-
-2. **Edit .env file with your AWS credentials:**
-   ```bash
-   # Method 1: Direct AWS Credentials (temporary setup)
-   AWS_ACCESS_KEY_ID=your_access_key_here
-   AWS_SECRET_ACCESS_KEY=your_secret_key_here
+   AWS_ACCESS_KEY_ID=your_key
+   AWS_SECRET_ACCESS_KEY=your_secret
    AWS_REGION=us-east-1
+   USE_AWS_PROFILE=false
    ```
 
-#### Method 2: Work Account Setup (Okta SSO + IAM Role) - Future Use
-For production/long-term use with work accounts through Okta SSO:
-
-1. **Configure AWS CLI with work profile:**
-   ```bash
-   # Configure your work AWS profile (replace 'work-profile' with your profile name)
-   aws configure sso --profile work-profile
-   # Follow prompts to authenticate via Okta
+2. **AWS Profile**:
    ```
-
-2. **Set environment variables in .env:**
-   ```bash
-   # Method 2: AWS Profile (recommended for long-term)
-   AWS_PROFILE=work-profile
    USE_AWS_PROFILE=true
-   AWS_REGION=us-east-1
+   AWS_PROFILE=your-profile-name
    ```
 
-3. **Login to work account:**
-   ```bash
-   aws sso login --profile work-profile
-   ```
+3. **AWS CLI**: Run `aws configure`
 
-### Requirements
-- AWS profile configured with Okta SSO integration
-- IAM role with Bedrock access permissions
-- The application uses the `anthropic.claude-instant-v1` model from Bedrock
-- Bedrock must be enabled in your work AWS account
+## PII Classification Types
 
-## Application Flow
+The system detects the following PII types:
+- SSN (Social Security Numbers)
+- EMAIL (Email addresses)
+- PHONE (Phone numbers)
+- ADDRESS (Physical addresses)
+- DOB (Date of Birth)
+- NAME (Personal names)
+- HASHED_PII (Hashed/encrypted PII)
+- NO_PII (Not PII)
 
-1. User uploads a CSV file via the React frontend interface
-2. Frontend sends the file to the FastAPI backend via REST API
-3. Backend processes the CSV and extracts column samples (up to 5 values per column)
-4. For each column, samples are sent to Claude Instant via Bedrock for PII classification
-5. Backend returns structured results with PII status, confidence scores, and reasoning
-6. Frontend displays results in a modern table with visual indicators and sample data
+## Key Implementation Details
 
-## Data Files
+- **CORS Configuration**: Currently allows all origins (`*`) for development. Update for production.
+- **Model**: Uses Amazon Titan Text Express v1 via Bedrock
+- **Data Processing**: Custom CSV parsing with csv-parser, max 5 sample values per column for analysis
+- **Error Handling**: Comprehensive error handling with appropriate HTTP status codes
+- **Docker**: Pre-built images available as `joshuaedelmann/export-review-backend` and `joshuaedelmann/export-review-frontend`
 
-- **pii_training_data.csv**: Contains examples of various PII types (SSN, EMAIL, DOB, ADDRESS, PHONE, HASHED_PII)
-- **fake_pii.csv** and **no_pii.csv**: Additional test datasets
+## Testing Approach
+
+- Backend: Use `npm run lint` to verify code quality and `npm test` for unit tests
+- Manual testing via endpoints (no automated test suite currently)
+- Frontend: No test suite currently configured
 
 ## Security Considerations
 
-This is a defensive security tool designed to detect PII in datasets. The system processes potentially sensitive data, so ensure proper AWS IAM permissions and secure deployment practices when using in production.
+This is a defensive security tool. When working with this codebase:
+- Never expose AWS credentials in code
+- Maintain secure handling of uploaded CSV data
+- This tool is for identifying PII, not for malicious purposes
+- Review all PII classifications before taking action on data
 
 
-## 7 Claude rules
+# 7 Claude rules
 1. First think through the problem, read the codebase for relevant files, and write a plan to tasks/todo.md.
 2. The plan should have a list of todo items that you can check off as you complete them
 3. Before you begin working, check in with me and I will verify the plan.
