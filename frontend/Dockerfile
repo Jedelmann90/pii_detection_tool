@@ -11,12 +11,8 @@ COPY package*.json ./
 # Install all dependencies (including dev dependencies)
 RUN npm ci
 
-# Copy configuration files
-COPY next.config.ts tsconfig.json tailwind.config.ts postcss.config.mjs components.json ./
-
-# Don't copy source code - it will be volume mapped
-# Create necessary directories
-RUN mkdir -p src public
+# Copy all source code and configuration
+COPY . .
 
 # Expose port
 EXPOSE 3000

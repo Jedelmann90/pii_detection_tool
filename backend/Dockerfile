@@ -17,8 +17,8 @@ COPY . .
 # Expose port
 EXPOSE 8000
 
-# Development command with nodemon for hot reload
-CMD ["npm", "run", "dev"]
+# Development command - run without file watching to avoid macOS Docker issues
+CMD ["npx", "tsx", "src/app.ts"]
 
 # Build stage
 FROM node:18-alpine AS build
