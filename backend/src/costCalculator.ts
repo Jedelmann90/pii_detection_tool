@@ -36,12 +36,12 @@ export class CostCalculator {
     const totalCost = inputCost + outputCost;
 
     return {
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      total_tokens: inputTokens + outputTokens,
-      input_cost_usd: Math.round(inputCost * 1000000) / 1000000, // Round to 6 decimal places
-      output_cost_usd: Math.round(outputCost * 1000000) / 1000000,
-      total_cost_usd: Math.round(totalCost * 1000000) / 1000000
+      inputTokens: inputTokens,
+      outputTokens: outputTokens,
+      totalTokens: inputTokens + outputTokens,
+      inputCostUsd: Math.round(inputCost * 1000000) / 1000000, // Round to 6 decimal places
+      outputCostUsd: Math.round(outputCost * 1000000) / 1000000,
+      totalCostUsd: Math.round(totalCost * 1000000) / 1000000
     };
   }
 

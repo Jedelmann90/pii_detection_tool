@@ -219,10 +219,10 @@ export default function Home() {
                 <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
                   <h4 className="text-sm font-semibold text-blue-900 mb-2">Estimated Cost</h4>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>Input Tokens: {estimatedCost.input_tokens}</div>
-                    <div>Output Tokens: {estimatedCost.output_tokens}</div>
-                    <div>Total Cost: ${estimatedCost.total_cost_usd?.toFixed(6)}</div>
-                    <div>Total Tokens: {estimatedCost.total_tokens}</div>
+                    <div>Input Tokens: {estimatedCost.inputTokens}</div>
+                    <div>Output Tokens: {estimatedCost.outputTokens}</div>
+                    <div>Total Cost: ${estimatedCost.totalCostUsd?.toFixed(6)}</div>
+                    <div>Total Tokens: {estimatedCost.totalTokens}</div>
                   </div>
                 </div>
               )}
@@ -231,10 +231,10 @@ export default function Home() {
                 <div className="p-4 rounded-lg bg-green-50 border border-green-200">
                   <h4 className="text-sm font-semibold text-green-900 mb-2">Actual Cost</h4>
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div>Input Tokens: {actualCost.input_tokens}</div>
-                    <div>Output Tokens: {actualCost.output_tokens}</div>
-                    <div className="font-bold">Total Cost: ${actualCost.total_cost_usd?.toFixed(6)}</div>
-                    <div>Total Tokens: {actualCost.total_tokens}</div>
+                    <div>Input Tokens: {actualCost.inputTokens}</div>
+                    <div>Output Tokens: {actualCost.outputTokens}</div>
+                    <div className="font-bold">Total Cost: ${actualCost.totalCostUsd?.toFixed(6)}</div>
+                    <div>Total Tokens: {actualCost.totalTokens}</div>
                   </div>
                 </div>
               )}

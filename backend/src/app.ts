@@ -267,12 +267,12 @@ app.post('/analyze-csv', upload.array('files', 10), asyncHandler(async (req: exp
       : 0;
 
     const totalCostInfo = {
-      input_tokens: totalInputTokens,
-      output_tokens: totalOutputTokens,
-      total_tokens: totalInputTokens + totalOutputTokens,
-      input_cost_usd: Math.round((totalInputTokens / 1000) * 0.0008 * 1000000) / 1000000,
-      output_cost_usd: Math.round((totalOutputTokens / 1000) * 0.0016 * 1000000) / 1000000,
-      total_cost_usd: Math.round(totalCostUsd * 1000000) / 1000000
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+      totalTokens: totalInputTokens + totalOutputTokens,
+      inputCostUsd: Math.round((totalInputTokens / 1000) * 0.0008 * 1000000) / 1000000,
+      outputCostUsd: Math.round((totalOutputTokens / 1000) * 0.0016 * 1000000) / 1000000,
+      totalCostUsd: Math.round(totalCostUsd * 1000000) / 1000000
     };
 
     const response = {
